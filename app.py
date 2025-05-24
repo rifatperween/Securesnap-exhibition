@@ -9,6 +9,7 @@ import random
 import zipfile
 import json
 import os
+import time 
 
 import requests
 from dotenv import load_dotenv
@@ -183,6 +184,7 @@ def logout():
 # ---------------------------
 @app.route('/split', methods=['POST'])
 def split_image():
+    start_time = time.time()  # Start timer
     if 'split-file' not in request.files:
         return jsonify({'message': 'No file provided'}), 400
     file = request.files['split-file']
@@ -215,6 +217,9 @@ def split_image():
             zf.writestr(f"block_{i}.png", block_buffer.getvalue())
         zf.writestr("metadata.json", json.dumps(metadata))
     zip_buffer.seek(0)
+    # End timer after processing
+    processing_time = time.time() - start_time
+    print(f"Split processing time: {processing_time:.4f} seconds")
     return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name="split_blocks.zip")
 
 # ---------------------------
@@ -222,6 +227,7 @@ def split_image():
 # ---------------------------
 @app.route('/encrypt_zip', methods=['POST'])
 def encrypt_zip():
+    start_time = time.time()  # Start timing
     if 'encrypt-zip-file' not in request.files or 'key' not in request.form:
         return jsonify({'message': 'ZIP file and key are required'}), 400
 
@@ -248,6 +254,9 @@ def encrypt_zip():
             new_filename = info.filename.rsplit('.', 1)[0] + ".bin"
             zout.writestr(new_filename, encrypted_file)
     encrypted_zip_buffer.seek(0)
+    processing_time = time.time() - start_time  # Stop timing
+
+    print(f"Encryption processing time: {processing_time:.4f} seconds")  # Console log
     return send_file(encrypted_zip_buffer, mimetype='application/zip', as_attachment=True, download_name="encrypted_blocks.zip")
 
 # ---------------------------
@@ -255,6 +264,7 @@ def encrypt_zip():
 # ---------------------------
 @app.route('/stitch_decrypt', methods=['POST'])
 def stitch_decrypt():
+    start_time = time.time()  # Start timing
     if 'stitch-zip-file' not in request.files or 'key' not in request.form:
         return jsonify({'message': 'Encrypted ZIP and key are required'}), 400
 
@@ -314,6 +324,9 @@ def stitch_decrypt():
     out_buffer = BytesIO()
     stitched_image.save(out_buffer, format="PNG")
     out_buffer.seek(0)
+    processing_time = time.time() - start_time  # Stop timing
+
+    print(f"Decryption & Stitch processing time: {processing_time:.4f} seconds")  # Console log
     return send_file(out_buffer, mimetype='image/png', as_attachment=True, download_name="stitched_image.png")
 
 # ---------------------------
